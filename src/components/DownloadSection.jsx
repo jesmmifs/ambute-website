@@ -3,7 +3,7 @@ export default function DownloadSection() {
     <section id="download" className="download" aria-labelledby="download-title">
       <div className="download__visual">
         <img
-          src="/assets/ambute-adopt.png"
+          src={`${import.meta.env.BASE_URL}assets/ambute-adopt.png`}
           alt="Ambute smiling on a small garden island"
         />
       </div>
