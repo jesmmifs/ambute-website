@@ -11,7 +11,7 @@ export default function App() {
   const [isMindVisible, setIsMindVisible] = useState(false);
   const [isDownloadVisible, setIsDownloadVisible] = useState(false);
   const [isPastHero, setIsPastHero] = useState(false);
-  const [isFloatingOnLightBackground, setIsFloatingOnLightBackground] =
+  const [isEmergenceIntroPlaying, setIsEmergenceIntroPlaying] =
     useState(false);
   const experienceRef = useRef(null);
   const openingRef = useRef(null);
@@ -19,22 +19,17 @@ export default function App() {
   const handleReady = useCallback(() => setIsReady(true), []);
 
   useEffect(() => {
-    const updateFloatingLink = () => {
-      const opening = openingRef.current;
-      const probeY = window.innerWidth < 760 ? window.innerHeight - 32 : 24;
+    const updateScrollCue = () => {
       setIsPastHero(window.scrollY > window.innerHeight * 0.9);
-      setIsFloatingOnLightBackground(
-        opening ? opening.getBoundingClientRect().bottom <= probeY : false
-      );
     };
 
-    updateFloatingLink();
-    window.addEventListener("scroll", updateFloatingLink, { passive: true });
-    window.addEventListener("resize", updateFloatingLink);
+    updateScrollCue();
+    window.addEventListener("scroll", updateScrollCue, { passive: true });
+    window.addEventListener("resize", updateScrollCue);
 
     return () => {
-      window.removeEventListener("scroll", updateFloatingLink);
-      window.removeEventListener("resize", updateFloatingLink);
+      window.removeEventListener("scroll", updateScrollCue);
+      window.removeEventListener("resize", updateScrollCue);
     };
   }, []);
 
@@ -122,24 +117,20 @@ export default function App() {
     };
   }, []);
 
-  const isFloatingDownloadHidden = !isPastHero || isDownloadVisible;
+  const isScrollHelperHidden =
+    !isPastHero || isDownloadVisible || isEmergenceIntroPlaying;
 
   return (
     <main ref={experienceRef} className="experience">
-      <a
-        className={`floating-download${
-          isFloatingDownloadHidden ? " floating-download--hidden" : ""
-        }${
-          isFloatingOnLightBackground
-            ? " floating-download--on-light"
-            : ""
+      <div
+        className={`scroll-helper${
+          isScrollHelperHidden ? " scroll-helper--hidden" : ""
         }`}
-        href="#download"
-        aria-hidden={isFloatingDownloadHidden ? "true" : undefined}
-        tabIndex={isFloatingDownloadHidden ? -1 : undefined}
+        aria-hidden="true"
       >
-        Adopt
-      </a>
+        <span>Scroll</span>
+        <span className="scroll-helper__arrow" />
+      </div>
 
       <div
         ref={openingRef}
@@ -193,7 +184,9 @@ export default function App() {
         </section>
       </div>
 
-      <EmergenceSection />
+      <EmergenceSection
+        onDescentActiveChange={setIsEmergenceIntroPlaying}
+      />
       <BrainSection />
       <ThoughtStreamSection />
       <MythologySection />

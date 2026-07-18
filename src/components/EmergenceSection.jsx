@@ -65,7 +65,7 @@ function setupLighting(scene) {
   scene.add(warmFill);
 }
 
-export default function EmergenceSection() {
+export default function EmergenceSection({ onDescentActiveChange }) {
   const sectionRef = useRef(null);
   const mountRef = useRef(null);
   const [hasLanded, setHasLanded] = useState(false);
@@ -147,6 +147,7 @@ export default function EmergenceSection() {
     } catch {
       mount.dataset.webgl = "unavailable";
       setHasLanded(true);
+      onDescentActiveChange?.(false);
       return undefined;
     }
 
@@ -374,6 +375,7 @@ export default function EmergenceSection() {
         revealLockedScrollY = window.scrollY + rect.top;
         ground.visible = true;
         model.group.visible = true;
+        onDescentActiveChange?.(!prefersReducedMotion);
       }
 
       if (stacked && hasTriggered && !descentComplete && !prefersReducedMotion) {
@@ -420,6 +422,7 @@ export default function EmergenceSection() {
         applyFaceExpression(model.face, "neutral");
         placeScene();
         setHasLanded(true);
+        onDescentActiveChange?.(false);
       }
     }
 
@@ -513,6 +516,7 @@ export default function EmergenceSection() {
               updateFaceTracking(model.face, { sleeping: false });
               placeScene();
               setHasLanded(true);
+              onDescentActiveChange?.(false);
             }
           }
         }
@@ -528,6 +532,7 @@ export default function EmergenceSection() {
 
     return () => {
       window.cancelAnimationFrame(frameId);
+      onDescentActiveChange?.(false);
       resizeObserver.disconnect();
       visibilityObserver.disconnect();
       window.removeEventListener("scroll", updateScrollState);
