@@ -1,0 +1,7 @@
+export const AMBUTE_CONFIG = {
+  BODY_COLOR: 0xeeb297,
+  EMISSIVE_COLOR: 0xffc4a8,
+  MOUTH_COLOR: 0x4a2a20,
+  EYE_COLOR: 0x301a15,
+  BLUSH_COLOR: 0xffa0b0
+};
