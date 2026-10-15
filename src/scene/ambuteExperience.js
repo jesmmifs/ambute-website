@@ -116,9 +116,10 @@ export function createAmbuteExperience(
   }
 
   function applyProgress() {
-    const transition = smoothstep(0.34, 0.52, progress);
-    const islandEntrance = smoothstep(0.39, 0.62, progress);
-    const heroPresence = 1 - smoothstep(0.32, 0.49, progress);
+    const transition = smoothstep(0.12, 0.5, progress);
+    const islandEntrance = smoothstep(0.24, 0.64, progress);
+    const islandSettle = smoothstep(0.64, 1, progress);
+    const heroPresence = 1 - smoothstep(0.08, 0.38, progress);
     prenatal.setOpacity(heroPresence);
     prenatal.group.position.set(
       layout.heroX,
@@ -131,14 +132,16 @@ export function createAmbuteExperience(
     prenatal.group.rotation.z = transition * -0.08;
     sky.setOpacity(transition);
 
-    island.group.visible = progress > 0.24;
+    island.group.visible = progress > 0.12;
     island.group.position.set(
       layout.worldX,
-      layout.worldY + (1 - islandEntrance) * -4.2,
+      layout.worldY + (1 - islandEntrance) * -3.8 + islandSettle * 0.06,
       layout.worldZ
     );
     island.group.scale.setScalar(
-      layout.worldScale * mix(0.86, 1, islandEntrance)
+      layout.worldScale *
+        mix(0.86, 1, islandEntrance) *
+        mix(1, 1.012, islandSettle)
     );
     island.group.rotation.y = mix(
       -0.16,
@@ -197,6 +200,7 @@ export function createAmbuteExperience(
     if (!width || !height) return;
     const shortLandscape = height < 620 && width > height;
     const compact = width < 760 || (width < 900 && height >= width);
+    const phone = width < 520 && !shortLandscape;
     const portraitCompact = compact && !shortLandscape;
     const pixelRatio = compact
       ? Math.min(window.devicePixelRatio, 1.15)
@@ -205,13 +209,13 @@ export function createAmbuteExperience(
     renderer.setSize(width, height, false);
     keyLight.shadow.mapSize.set(compact ? 768 : 1536, compact ? 768 : 1536);
     camera.aspect = width / height;
-    camera.fov = portraitCompact ? 38 : shortLandscape ? 36 : 34;
+    camera.fov = phone ? 40 : portraitCompact ? 38 : shortLandscape ? 36 : 34;
     camera.position.set(
       0,
-      portraitCompact ? 1.3 : 1.12,
-      portraitCompact ? 9.25 : 8.25
+      phone ? 1.38 : portraitCompact ? 1.3 : 1.12,
+      phone ? 9.65 : portraitCompact ? 9.25 : 8.25
     );
-    camera.lookAt(0, portraitCompact ? 0.85 : 0.65, 0);
+    camera.lookAt(0, phone ? 1.02 : portraitCompact ? 0.85 : 0.65, 0);
     camera.updateProjectionMatrix();
 
     if (shortLandscape) {
@@ -226,6 +230,18 @@ export function createAmbuteExperience(
         worldScale: 0.7,
         worldRotation: 0.02
       };
+    } else if (phone) {
+      layout = {
+        heroX: 0,
+        heroY: 1.1,
+        heroLift: 5.2,
+        heroScale: height < 680 ? 0.94 : 1.04,
+        worldX: 0,
+        worldY: height < 680 ? 1.48 : 1.68,
+        worldZ: 0,
+        worldScale: height < 680 ? 0.48 : 0.54,
+        worldRotation: 0.02
+      };
     } else if (compact) {
       layout = {
         heroX: 0,
@@ -235,7 +251,7 @@ export function createAmbuteExperience(
         worldX: 0,
         worldY: height < 680 ? 1.25 : 1.5,
         worldZ: 0,
-        worldScale: height < 680 ? 0.62 : 0.7,
+        worldScale: height < 680 ? 0.58 : 0.64,
         worldRotation: 0.02
       };
     } else {
@@ -258,7 +274,7 @@ export function createAmbuteExperience(
 
   function setProgress(value) {
     progress = clamp(value);
-    if (progress > 0.08) loadWorld();
+    if (progress > 0.03) loadWorld();
     applyProgress();
     if (!active || !pageVisible) render();
   }

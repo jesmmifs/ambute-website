@@ -14,6 +14,7 @@ const islandPoster = `url("${import.meta.env.BASE_URL}assets/scene/ambute-island
 export default function CinematicStory() {
   const storyRef = useRef(null);
   const canvasRef = useRef(null);
+  const scrollCueTextRef = useRef(null);
   const experienceRef = useRef(null);
   const idleHandleRef = useRef(null);
   const [status, setStatus] = useState("loading");
@@ -73,10 +74,10 @@ export default function CinematicStory() {
 
       const heroExit = reducedMotion
         ? visualProgress
-        : smoothstep(0.28, 0.49, progress);
+        : smoothstep(0.08, 0.38, progress);
       const worldEntrance = reducedMotion
         ? visualProgress
-        : smoothstep(0.48, 0.68, progress);
+        : smoothstep(0.36, 0.66, progress);
 
       story.style.setProperty("--hero-presence", `${1 - heroExit}`);
       story.style.setProperty("--hero-copy-y", `${heroExit * -3.4}rem`);
@@ -87,12 +88,22 @@ export default function CinematicStory() {
       );
       story.style.setProperty(
         "--scroll-cue-presence",
-        `${1 - smoothstep(0.02, 0.14, progress)}`
+        `${1 - smoothstep(0.86, 0.97, progress)}`
       );
-      story.dataset.phase = progress < 0.48 ? "prenatal" : "world";
+      story.style.setProperty("--story-progress", `${progress}`);
+      story.dataset.phase =
+        progress < 0.18
+          ? "prenatal"
+          : progress < 0.66
+            ? "transition"
+            : "world";
+      if (scrollCueTextRef.current) {
+        scrollCueTextRef.current.textContent =
+          progress < 0.22 ? "Scroll to meet him" : "Keep scrolling";
+      }
       experience.setProgress(visualProgress);
 
-      if (progress > 0.08) experience.loadWorld();
+      if (progress > 0.03) experience.loadWorld();
     };
 
     const scheduleStoryUpdate = () => {
@@ -179,7 +190,8 @@ export default function CinematicStory() {
         </section>
 
         <div className="scroll-cue" aria-hidden="true">
-          <span>Scroll to meet him</span>
+          <span ref={scrollCueTextRef}>Scroll to meet him</span>
+          <b />
           <i />
         </div>
 
