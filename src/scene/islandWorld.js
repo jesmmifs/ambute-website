@@ -4,6 +4,10 @@ import { createIslandGrass } from "./islandGrass";
 import { createPaintedTree } from "./paintedTree";
 
 const POPI_HEIGHT = 1.64;
+const INITIAL_SCRATCH_DELAY_MS = 15000;
+const INITIAL_SCRATCH_JITTER_MS = 7000;
+const SCRATCH_COOLDOWN_MS = 24000;
+const SCRATCH_COOLDOWN_JITTER_MS = 14000;
 
 function irregularity(angle) {
   return (
@@ -34,6 +38,56 @@ function softenCylinder(geometry, verticalAmount = 0.02) {
   positions.needsUpdate = true;
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function paintEarthGeometry(geometry) {
+  const positions = geometry.getAttribute("position");
+  geometry.computeBoundingBox();
+  const { min, max } = geometry.boundingBox;
+  const height = Math.max(0.001, max.y - min.y);
+  const colors = new Float32Array(positions.count * 3);
+  const lowerColor = new THREE.Color(0x603a2b);
+  const middleColor = new THREE.Color(0x9a6243);
+  const upperColor = new THREE.Color(0xb97a50);
+  const contactColor = new THREE.Color(0x542f22);
+  const color = new THREE.Color();
+
+  for (let index = 0; index < positions.count; index += 1) {
+    const x = positions.getX(index);
+    const y = positions.getY(index);
+    const z = positions.getZ(index);
+    const heightAmount = THREE.MathUtils.clamp((y - min.y) / height, 0, 1);
+    const angle = Math.atan2(z, x);
+
+    color.copy(lowerColor).lerp(
+      middleColor,
+      THREE.MathUtils.smoothstep(heightAmount, 0.08, 0.58)
+    );
+    color.lerp(
+      upperColor,
+      THREE.MathUtils.smoothstep(heightAmount, 0.46, 0.86) * 0.72
+    );
+
+    // A soft shadow directly beneath the turf makes the green ledge feel as
+    // though it sits above the exposed earth instead of being painted onto it.
+    const contactShadow = THREE.MathUtils.smoothstep(heightAmount, 0.78, 0.98);
+    color.lerp(contactColor, contactShadow * 0.68);
+
+    // Broad, low-frequency variation catches the sunlight without turning the
+    // island into striped or photorealistic soil.
+    const sunFacing = 0.5 + 0.5 * Math.cos(angle + 0.72);
+    const paintedVariation =
+      Math.sin(angle * 3.0 + heightAmount * 4.2) * 0.035 +
+      Math.sin(angle * 7.0 - heightAmount * 2.4) * 0.018;
+    color.multiplyScalar(0.94 + sunFacing * 0.16 + paintedVariation);
+
+    colors[index * 3] = color.r;
+    colors[index * 3 + 1] = color.g;
+    colors[index * 3 + 2] = color.b;
+  }
+
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   return geometry;
 }
 
@@ -79,58 +133,13 @@ function cloneMaterials(root) {
   });
 }
 
-function createFlower(color, x, z, scale = 1) {
-  const group = new THREE.Group();
-  const stem = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.012, 0.016, 0.2, 7),
-    new THREE.MeshStandardMaterial({ color: 0x456037, roughness: 0.95 })
-  );
-  stem.position.y = 0.1;
-  stem.castShadow = true;
-  stem.receiveShadow = true;
-  group.add(stem);
-  const petalMaterial = new THREE.MeshStandardMaterial({
-    color,
-    roughness: 0.8,
-    side: THREE.DoubleSide
-  });
-  for (let index = 0; index < 5; index += 1) {
-    const petal = new THREE.Mesh(
-      new THREE.SphereGeometry(0.045, 8, 6),
-      petalMaterial
-    );
-    const angle = (index / 5) * Math.PI * 2;
-    petal.position.set(
-      Math.cos(angle) * 0.052,
-      0.218,
-      Math.sin(angle) * 0.052
-    );
-    petal.scale.set(1.25, 0.42, 0.78);
-    petal.castShadow = true;
-    petal.receiveShadow = true;
-    group.add(petal);
-  }
-  const center = new THREE.Mesh(
-    new THREE.SphereGeometry(0.034, 8, 6),
-    new THREE.MeshStandardMaterial({ color: 0xe7bc54, roughness: 0.7 })
-  );
-  center.position.y = 0.228;
-  center.castShadow = true;
-  center.receiveShadow = true;
-  group.add(center);
-  group.position.set(x, 0.11, z);
-  group.scale.setScalar(scale);
-  group.userData.breezePhase = x * 2.1 + z * 1.7;
-  return group;
-}
-
 function createIslandBase() {
   const group = new THREE.Group();
   const earthMaterial = new THREE.MeshStandardMaterial({
-    color: 0x825b3e,
-    emissive: 0x2a160d,
-    emissiveIntensity: 0.18,
-    roughness: 0.98,
+    color: 0xffffff,
+    vertexColors: true,
+    roughness: 0.88,
+    metalness: 0,
     flatShading: true
   });
   const grassMaterial = new THREE.MeshStandardMaterial({
@@ -140,9 +149,11 @@ function createIslandBase() {
   });
 
   const earth = new THREE.Mesh(
-    softenCylinder(
-      new THREE.CylinderGeometry(2.25, 0.96, 1.12, 72, 7),
-      0.026
+    paintEarthGeometry(
+      softenCylinder(
+        new THREE.CylinderGeometry(2.25, 0.96, 1.12, 72, 7),
+        0.026
+      )
     ),
     earthMaterial
   );
@@ -164,37 +175,6 @@ function createIslandBase() {
   turf.castShadow = true;
   turf.receiveShadow = true;
   group.add(turf);
-
-  const rocks = [
-    [-1.72, 0.18, 0.46, 0.18],
-    [1.68, 0.16, -0.35, 0.16],
-    [1.42, 0.15, 0.83, 0.11],
-    [-1.34, 0.15, -0.86, 0.12]
-  ];
-  rocks.forEach(([x, y, z, scale], index) => {
-    const rock = new THREE.Mesh(
-      new THREE.DodecahedronGeometry(1, 0),
-      new THREE.MeshStandardMaterial({
-        color: index % 2 ? 0x776e60 : 0x887d6a,
-        roughness: 1,
-        flatShading: true
-      })
-    );
-    rock.position.set(x, y, z);
-    rock.scale.set(scale * 1.35, scale * 0.7, scale);
-    rock.rotation.set(index * 0.17, index * 0.82, index * 0.11);
-    rock.castShadow = true;
-    group.add(rock);
-  });
-
-  [
-    [0xf2d3d8, -1.42, 0.72, 0.82],
-    [0xd8c5ef, 1.57, 0.56, 0.72],
-    [0xf0cf7a, 1.32, -0.78, 0.8],
-    [0xe9b59f, -1.66, -0.38, 0.68]
-  ].forEach(([color, x, z, scale]) =>
-    group.add(createFlower(color, x, z, scale))
-  );
 
   return group;
 }
@@ -264,18 +244,28 @@ export function createIslandWorld(assetUrl, onReady) {
   let standbyAction = null;
   let scratchAction = null;
   let scratchPlaying = false;
-  let nextScratchAt = 15000;
+  let nextScratchAt = Infinity;
   let previousTime = 0;
   let paintedTree = null;
   const neutralFaceMeshes = [];
   const localCameraPosition = new THREE.Vector3();
+
+  function scheduleNextScratch(now, initial = false) {
+    const delay = initial
+      ? INITIAL_SCRATCH_DELAY_MS + Math.random() * INITIAL_SCRATCH_JITTER_MS
+      : SCRATCH_COOLDOWN_MS + Math.random() * SCRATCH_COOLDOWN_JITTER_MS;
+    nextScratchAt = now + delay;
+  }
 
   function handleScratchFinished({ action }) {
     if (action !== scratchAction || !standbyAction) return;
     scratchPlaying = false;
     scratchAction.fadeOut(0.55);
     standbyAction.reset().fadeIn(0.55).play();
-    nextScratchAt += 21000;
+    // Schedule from the actual finish time. Advancing the old deadline could
+    // leave it in the past after a slow load or hidden tab and immediately
+    // start another belly scratch.
+    scheduleNextScratch(previousTime || performance.now());
   }
 
   function prepareTree(gltf, leafTexture) {
@@ -326,6 +316,7 @@ export function createIslandWorld(assetUrl, onReady) {
       scratchAction.setLoop(THREE.LoopOnce, 1);
       scratchAction.clampWhenFinished = true;
       mixer.addEventListener("finished", handleScratchFinished);
+      scheduleNextScratch(previousTime || performance.now(), true);
     }
     return clips.map((clip) => clip.name);
   }

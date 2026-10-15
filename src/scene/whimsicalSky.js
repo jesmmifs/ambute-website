@@ -88,9 +88,9 @@ function createPaintedCloud(size, variant) {
   const material = new THREE.MeshBasicMaterial({
     color: 0xffffff,
     vertexColors: true,
-    transparent: true,
-    opacity: 0,
-    depthWrite: false,
+    transparent: false,
+    opacity: 1,
+    depthWrite: true,
     toneMapped: true,
     fog: false
   });
@@ -117,6 +117,7 @@ function createSkyTexture() {
 export function createWhimsicalSky() {
   const group = new THREE.Group();
   group.renderOrder = -10;
+  let cloudReveal = 0;
   const texture = createSkyTexture();
   const backdropMaterial = new THREE.MeshBasicMaterial({
     map: texture,
@@ -153,11 +154,13 @@ export function createWhimsicalSky() {
   });
 
   function setOpacity(opacity) {
-    backdropMaterial.opacity = opacity;
+    const skyOpacity = clamp(opacity);
+    backdropMaterial.opacity = skyOpacity;
+    cloudReveal = smoothstep(0.08, 0.72, skyOpacity);
     clouds.forEach((cloud) => {
-      cloud.material.opacity = opacity;
+      cloud.visible = cloudReveal > 0.001;
     });
-    group.visible = opacity > 0.004;
+    group.visible = skyOpacity > 0.004;
   }
 
   function update(timeSeconds, motion = true) {
@@ -168,6 +171,7 @@ export function createWhimsicalSky() {
         (motion ? Math.sin(timeSeconds * cloud.userData.speed + phase) * 0.42 : 0);
       cloud.position.y =
         cloud.userData.baseY +
+        (1 - cloudReveal) * 2.2 +
         (motion ? Math.sin(timeSeconds * 0.16 + phase) * 0.055 : 0);
     });
   }
