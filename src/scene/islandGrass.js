@@ -291,6 +291,11 @@ export function createIslandGrass() {
     setCompact(compact) {
       mesh.count = compact ? MOBILE_BLADE_COUNT : DESKTOP_BLADE_COUNT;
     },
+    setSeasonColor(color) {
+      if (!color?.isColor) return;
+      material.uniforms.uTopColor.value.copy(color);
+      material.uniforms.uBottomColor.value.copy(color);
+    },
     update(timeSeconds, motion = true) {
       material.uniforms.uTime.value = motion ? timeSeconds % 10000 : 0.8;
       material.uniforms.uWindSpeed.value = motion ? 1 : 0;

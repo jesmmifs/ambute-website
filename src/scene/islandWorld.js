@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { createIslandGrass } from "./islandGrass";
+import { createIslandSeasonCycle } from "./islandSeasonCycle";
 import { createPaintedTree } from "./paintedTree";
 
 const POPI_HEIGHT = 1.64;
@@ -135,6 +136,8 @@ function cloneMaterials(root) {
 
 function createIslandBase() {
   const group = new THREE.Group();
+  const earthHeight = 0.82;
+  const islandTopY = 0.08;
   const earthMaterial = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     vertexColors: true,
@@ -151,14 +154,14 @@ function createIslandBase() {
   const earth = new THREE.Mesh(
     paintEarthGeometry(
       softenCylinder(
-        new THREE.CylinderGeometry(2.25, 0.96, 1.12, 72, 7),
+        new THREE.CylinderGeometry(2.25, 1.15, earthHeight, 72, 7),
         0.026
       )
     ),
     earthMaterial
   );
   earth.scale.z = 0.68;
-  earth.position.y = -0.48;
+  earth.position.y = islandTopY - earthHeight * 0.5;
   earth.castShadow = true;
   earth.receiveShadow = true;
   group.add(earth);
@@ -176,7 +179,7 @@ function createIslandBase() {
   turf.receiveShadow = true;
   group.add(turf);
 
-  return group;
+  return { group, grassMaterial };
 }
 
 function disposeGraph(root) {
@@ -204,39 +207,13 @@ export function createIslandWorld(assetUrl, onReady) {
   const group = new THREE.Group();
   const floatingRoot = new THREE.Group();
   group.add(floatingRoot);
-  floatingRoot.add(createIslandBase());
+  const islandBase = createIslandBase();
+  floatingRoot.add(islandBase.group);
 
   const grass = createIslandGrass();
   floatingRoot.add(grass.mesh);
-
-  const shadowTextureCanvas = document.createElement("canvas");
-  shadowTextureCanvas.width = 256;
-  shadowTextureCanvas.height = 128;
-  const shadowContext = shadowTextureCanvas.getContext("2d");
-  const shadowGradient = shadowContext.createRadialGradient(
-    128,
-    64,
-    0,
-    128,
-    64,
-    125
-  );
-  shadowGradient.addColorStop(0, "rgba(36,46,33,.24)");
-  shadowGradient.addColorStop(1, "rgba(36,46,33,0)");
-  shadowContext.fillStyle = shadowGradient;
-  shadowContext.fillRect(0, 0, 256, 128);
-  const shadowTexture = new THREE.CanvasTexture(shadowTextureCanvas);
-  const islandShadow = new THREE.Mesh(
-    new THREE.PlaneGeometry(5.2, 2.5),
-    new THREE.MeshBasicMaterial({
-      map: shadowTexture,
-      transparent: true,
-      depthWrite: false
-    })
-  );
-  islandShadow.rotation.x = -Math.PI / 2;
-  islandShadow.position.y = -1.36;
-  floatingRoot.add(islandShadow);
+  const seasonCycle = createIslandSeasonCycle();
+  floatingRoot.add(seasonCycle.group);
 
   let reducedMotion = false;
   let loadPromise = null;
@@ -343,13 +320,17 @@ export function createIslandWorld(assetUrl, onReady) {
     return loadPromise;
   }
 
-  function update(now, camera) {
+  function update(now, camera, lighting) {
     const seconds = now * 0.001;
     const motion = !reducedMotion;
     const delta = previousTime
       ? Math.min(0.05, (now - previousTime) / 1000)
       : 0;
     previousTime = now;
+    const season = seasonCycle.update(delta, motion);
+    grass.setSeasonColor(season.grassColor);
+    islandBase.grassMaterial.color.copy(season.grassColor);
+    paintedTree?.setSeasonColor(season.treeColor);
     floatingRoot.position.y = motion ? Math.sin(seconds * 0.72) * 0.035 : 0;
     floatingRoot.rotation.z = motion ? Math.sin(seconds * 0.42) * 0.004 : 0;
     grass.update(seconds, motion);
@@ -358,7 +339,7 @@ export function createIslandWorld(assetUrl, onReady) {
       group.worldToLocal(localCameraPosition);
       grass.orientToCamera(localCameraPosition);
     }
-    paintedTree?.update(seconds, motion);
+    paintedTree?.update(seconds, motion, lighting);
     floatingRoot.children.forEach((child) => {
       if (child.userData.breezePhase === undefined) return;
       child.rotation.z = motion
@@ -391,6 +372,7 @@ export function createIslandWorld(assetUrl, onReady) {
 
   function setCompact(compact) {
     grass.setCompact(compact);
+    seasonCycle.setCompact(compact);
   }
 
   function setReducedMotion(value) {

@@ -47,9 +47,8 @@ a {
   --world-presence: 0;
   --world-copy-y: 2.8rem;
   --scroll-cue-presence: 1;
-  --story-progress: 0;
   position: relative;
-  height: 220svh;
+  height: 180svh;
   background: #030403;
 }
 
@@ -126,9 +125,9 @@ a {
 }
 
 .world-copy {
-  top: 50%;
-  right: clamp(2rem, 7.5vw, 8rem);
-  width: min(37rem, 39vw);
+  top: 56%;
+  right: clamp(2rem, 5vw, 6rem);
+  width: min(34rem, 33vw);
   color: #263028;
   opacity: var(--world-presence);
   transform: translateY(calc(-50% + var(--world-copy-y)));
@@ -171,16 +170,15 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.42rem;
-  min-width: 8.5rem;
-  padding: 0.62rem 0.78rem 0.58rem;
+  gap: 0.3rem;
+  padding: 0.42rem 0.62rem 0.4rem;
   border: 1px solid rgba(248, 243, 235, 0.12);
   border-radius: 999px;
-  background: rgba(8, 11, 9, 0.34);
+  background: rgba(8, 11, 9, 0.28);
   color: rgba(248, 243, 235, 0.82);
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.065em;
   text-transform: uppercase;
   opacity: var(--scroll-cue-presence);
   transform: translateX(-50%);
@@ -188,26 +186,9 @@ a {
   pointer-events: none;
 }
 
-.scroll-cue b {
-  position: relative;
-  width: 3.2rem;
-  height: 1px;
-  overflow: hidden;
-  background: rgba(248, 243, 235, 0.2);
-}
-
-.scroll-cue b::after {
-  position: absolute;
-  inset: 0;
-  content: "";
-  background: currentColor;
-  transform: scaleX(var(--story-progress));
-  transform-origin: left center;
-}
-
 .scroll-cue i {
-  width: 0.52rem;
-  height: 0.52rem;
+  width: 0.38rem;
+  height: 0.38rem;
   border-right: 1px solid currentColor;
   border-bottom: 1px solid currentColor;
   animation: cue-drift 1.7s ease-in-out infinite;
@@ -309,6 +290,71 @@ a {
   height: auto;
 }
 
+.steam-signoff__social {
+  margin-top: 2.2rem;
+}
+
+.steam-signoff__social > p {
+  margin: 0 0 0.75rem;
+  color: #93a096;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.steam-signoff__social > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.steam-signoff__social a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.62rem 0.82rem;
+  border: 1px solid rgba(226, 233, 225, 0.16);
+  border-radius: 999px;
+  background: rgba(226, 233, 225, 0.045);
+  color: #e3e9e2;
+  font-size: 0.78rem;
+  font-weight: 560;
+  text-decoration: none;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.steam-signoff__social a:hover {
+  border-color: rgba(226, 233, 225, 0.3);
+  background: rgba(226, 233, 225, 0.09);
+  transform: translateY(-2px);
+}
+
+.steam-signoff__social a:focus-visible {
+  outline: 2px solid #cbd8cc;
+  outline-offset: 3px;
+}
+
+.steam-signoff__social svg {
+  width: 1rem;
+  height: 1rem;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.steam-signoff__social .social-icon__dot {
+  fill: currentColor;
+  stroke: none;
+}
+
 .steam-signoff__legal {
   max-width: 42rem;
   margin: 2.2rem 0 0;
@@ -387,7 +433,7 @@ a {
 
 @media (max-width: 759px) {
   .story {
-    height: 225svh;
+    height: 185svh;
   }
 
   .hero-copy {
@@ -444,13 +490,17 @@ a {
 
   .scroll-cue {
     bottom: max(1.15rem, env(safe-area-inset-bottom));
-    font-size: 0.62rem;
+    padding: 0.38rem 0.54rem 0.36rem;
+    font-size: 0.56rem;
   }
 
   .story[data-phase="transition"] .scroll-cue,
   .story[data-phase="world"] .scroll-cue {
     top: max(0.8rem, env(safe-area-inset-top));
+    right: max(0.8rem, env(safe-area-inset-right));
     bottom: auto;
+    left: auto;
+    transform: none;
   }
 
   .story--fallback .story__canvas {
@@ -498,7 +548,7 @@ a {
 
 @media (max-height: 620px) and (orientation: landscape) {
   .story {
-    height: 210svh;
+    height: 175svh;
   }
 
   .hero-copy h1 {

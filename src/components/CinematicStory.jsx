@@ -74,10 +74,10 @@ export default function CinematicStory() {
 
       const heroExit = reducedMotion
         ? visualProgress
-        : smoothstep(0.08, 0.38, progress);
+        : smoothstep(0.08, 0.42, progress);
       const worldEntrance = reducedMotion
         ? visualProgress
-        : smoothstep(0.36, 0.66, progress);
+        : smoothstep(0.38, 0.94, progress);
 
       story.style.setProperty("--hero-presence", `${1 - heroExit}`);
       story.style.setProperty("--hero-copy-y", `${heroExit * -3.4}rem`);
@@ -88,13 +88,12 @@ export default function CinematicStory() {
       );
       story.style.setProperty(
         "--scroll-cue-presence",
-        `${1 - smoothstep(0.86, 0.97, progress)}`
+        `${1 - smoothstep(0.78, 0.94, progress)}`
       );
-      story.style.setProperty("--story-progress", `${progress}`);
       story.dataset.phase =
         progress < 0.18
           ? "prenatal"
-          : progress < 0.66
+          : progress < 0.94
             ? "transition"
             : "world";
       if (scrollCueTextRef.current) {
@@ -175,23 +174,26 @@ export default function CinematicStory() {
         </section>
 
         <section className="world-copy" aria-labelledby="world-title">
-          <p className="world-copy__eyebrow">A living world on your desktop</p>
+          <p className="world-copy__eyebrow">A cozy idle companion</p>
           <h2 id="world-title">A small life beside yours.</h2>
           <p>
-            Ambute is a gentle creature who lives beside you on your desktop
-            while you work. His world follows your seasons, time, and
-            weather—when it rains outside, it rains for Ambute too.
+            Ambute is a gentle creature who lives quietly on your desktop,
+            keeping you company while you work, study, or go about your day.
+            This cozy idle game unfolds in a tiny world that follows your
+            own—time passes, seasons change, and when it rains outside, it
+            rains for Ambute too.
           </p>
           <p>
-            Unwind with natural soundscapes, unlock new characters through the
-            way you care for him, and uncover the ancient mystery at the heart
-            of his world.
+            Let him potter about peacefully in the background while a living
+            natural soundscape soothes the soul, or stop by for small, gentle
+            interactions whenever you need a cozy moment together. The way you
+            care for Ambute shapes who comes next, unlocking new characters as
+            an ancient mystery slowly unfolds across generations.
           </p>
         </section>
 
         <div className="scroll-cue" aria-hidden="true">
           <span ref={scrollCueTextRef}>Scroll to meet him</span>
-          <b />
           <i />
         </div>
 

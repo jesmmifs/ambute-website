@@ -116,10 +116,9 @@ export function createAmbuteExperience(
   }
 
   function applyProgress() {
-    const transition = smoothstep(0.12, 0.5, progress);
-    const islandEntrance = smoothstep(0.24, 0.64, progress);
-    const islandSettle = smoothstep(0.64, 1, progress);
-    const heroPresence = 1 - smoothstep(0.08, 0.38, progress);
+    const transition = smoothstep(0.12, 0.6, progress);
+    const islandEntrance = smoothstep(0.32, 0.96, progress);
+    const heroPresence = 1 - smoothstep(0.08, 0.42, progress);
     prenatal.setOpacity(heroPresence);
     prenatal.group.position.set(
       layout.heroX,
@@ -135,13 +134,11 @@ export function createAmbuteExperience(
     island.group.visible = progress > 0.12;
     island.group.position.set(
       layout.worldX,
-      layout.worldY + (1 - islandEntrance) * -3.8 + islandSettle * 0.06,
+      layout.worldY + (1 - islandEntrance) * -3.8,
       layout.worldZ
     );
     island.group.scale.setScalar(
-      layout.worldScale *
-        mix(0.86, 1, islandEntrance) *
-        mix(1, 1.012, islandSettle)
+      layout.worldScale * mix(0.86, 1, islandEntrance)
     );
     island.group.rotation.y = mix(
       -0.16,
@@ -178,7 +175,9 @@ export function createAmbuteExperience(
     applyProgress();
     prenatal.update(now, !reducedMotion);
     sky.update(now * 0.001, !reducedMotion);
-    if (island.group.visible) island.update(now, camera);
+    if (island.group.visible) {
+      island.update(now, camera, { sun: keyLight, ambient, skyFill });
+    }
     renderer.render(scene, camera);
     if (active && pageVisible) frameId = window.requestAnimationFrame(render);
   }
@@ -198,10 +197,14 @@ export function createAmbuteExperience(
   function resize() {
     const { width, height } = mount.getBoundingClientRect();
     if (!width || !height) return;
+    const aspect = width / height;
     const shortLandscape = height < 620 && width > height;
-    const compact = width < 760 || (width < 900 && height >= width);
     const phone = width < 520 && !shortLandscape;
-    const portraitCompact = compact && !shortLandscape;
+    const mobilePortrait = width < 760 && !shortLandscape;
+    const tabletPortrait =
+      width >= 760 && width <= 1000 && height > width && !shortLandscape;
+    const tallDesktop = width > 900 && aspect < 1.18;
+    const compact = mobilePortrait || tabletPortrait;
     const pixelRatio = compact
       ? Math.min(window.devicePixelRatio, 1.15)
       : Math.min(window.devicePixelRatio, 1.55);
@@ -209,61 +212,104 @@ export function createAmbuteExperience(
     renderer.setSize(width, height, false);
     keyLight.shadow.mapSize.set(compact ? 768 : 1536, compact ? 768 : 1536);
     camera.aspect = width / height;
-    camera.fov = phone ? 40 : portraitCompact ? 38 : shortLandscape ? 36 : 34;
+    camera.fov = phone
+      ? 40
+      : compact
+        ? 38
+        : shortLandscape || tallDesktop
+          ? 36
+          : 34;
     camera.position.set(
       0,
-      phone ? 1.38 : portraitCompact ? 1.3 : 1.12,
-      phone ? 9.65 : portraitCompact ? 9.25 : 8.25
+      phone ? 1.38 : compact ? 1.3 : tallDesktop ? 1.18 : 1.12,
+      phone ? 9.65 : compact ? 9.3 : tallDesktop ? 8.9 : 8.25
     );
-    camera.lookAt(0, phone ? 1.02 : portraitCompact ? 0.85 : 0.65, 0);
+    camera.lookAt(
+      0,
+      phone ? 1.02 : compact ? 0.88 : tallDesktop ? 0.76 : 0.65,
+      0
+    );
     camera.updateProjectionMatrix();
 
     if (shortLandscape) {
       layout = {
-        heroX: -1.72,
+        heroX: -1.5,
         heroY: -0.18,
         heroLift: 4.5,
-        heroScale: 1.2,
-        worldX: -1.72,
+        heroScale: 1.12,
+        worldX: -1.5,
         worldY: -0.16,
         worldZ: 0,
-        worldScale: 0.7,
+        worldScale: THREE.MathUtils.clamp(width / 1300, 0.58, 0.68),
         worldRotation: 0.02
       };
     } else if (phone) {
+      const shortPhone = height < 680;
       layout = {
         heroX: 0,
         heroY: 1.1,
         heroLift: 5.2,
-        heroScale: height < 680 ? 0.94 : 1.04,
+        heroScale: shortPhone ? 0.94 : 1.04,
         worldX: 0,
-        worldY: height < 680 ? 1.48 : 1.68,
+        worldY: shortPhone ? 2.1 : 1.68,
         worldZ: 0,
-        worldScale: height < 680 ? 0.48 : 0.54,
+        worldScale: Math.min(
+          THREE.MathUtils.clamp(width / 720, 0.44, 0.54),
+          shortPhone ? 0.48 : 0.54
+        ),
         worldRotation: 0.02
       };
-    } else if (compact) {
+    } else if (mobilePortrait) {
       layout = {
         heroX: 0,
         heroY: 1.05,
         heroLift: 5.2,
         heroScale: height < 680 ? 1.02 : 1.14,
         worldX: 0,
-        worldY: height < 680 ? 1.25 : 1.5,
+        worldY: height < 680 ? 1.36 : 1.58,
         worldZ: 0,
-        worldScale: height < 680 ? 0.58 : 0.64,
+        worldScale: THREE.MathUtils.clamp(width / 1000, 0.52, 0.6),
+        worldRotation: 0.02
+      };
+    } else if (tabletPortrait) {
+      layout = {
+        heroX: 0,
+        heroY: 1.05,
+        heroLift: 5.2,
+        heroScale: 1.14,
+        worldX: 0,
+        worldY: 1.5,
+        worldZ: 0,
+        worldScale: THREE.MathUtils.clamp(width / 1200, 0.6, 0.66),
+        worldRotation: 0.02
+      };
+    } else if (tallDesktop) {
+      layout = {
+        heroX: -1.22,
+        heroY: -0.12,
+        heroLift: 4.8,
+        heroScale: 1.2,
+        worldX: -1.22,
+        worldY: -0.48,
+        worldZ: 0,
+        worldScale: THREE.MathUtils.clamp(width / 2100, 0.56, 0.62),
         worldRotation: 0.02
       };
     } else {
+      const desktopAmount = THREE.MathUtils.clamp(
+        (aspect - 1.12) / 0.55,
+        0,
+        1
+      );
       layout = {
-        heroX: -1.72,
+        heroX: mix(-1.35, -1.72, desktopAmount),
         heroY: -0.28,
         heroLift: 4.8,
-        heroScale: 1.38,
-        worldX: -1.88,
-        worldY: -0.2,
+        heroScale: mix(1.2, 1.38, desktopAmount),
+        worldX: mix(-0.8, -1.75, desktopAmount),
+        worldY: -0.6,
         worldZ: 0,
-        worldScale: 0.86,
+        worldScale: mix(0.68, 0.82, desktopAmount),
         worldRotation: 0.02
       };
     }
