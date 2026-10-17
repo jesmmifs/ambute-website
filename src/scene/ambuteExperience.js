@@ -251,11 +251,11 @@ export function createAmbuteExperience(
         heroLift: 5.2,
         heroScale: shortPhone ? 0.94 : 1.04,
         worldX: 0,
-        worldY: shortPhone ? 2.1 : 1.68,
+        worldY: shortPhone ? 0.82 : 0.92,
         worldZ: 0,
         worldScale: Math.min(
-          THREE.MathUtils.clamp(width / 720, 0.44, 0.54),
-          shortPhone ? 0.48 : 0.54
+          THREE.MathUtils.clamp(width / 640, 0.5, 0.62),
+          shortPhone ? 0.56 : 0.62
         ),
         worldRotation: 0.02
       };

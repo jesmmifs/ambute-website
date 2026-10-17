@@ -20,6 +20,8 @@ from these read-only sources:
   `C:\Github\Github\Apps\ambute\src\three\paintedTreeCanopy.js`
 - Painted cloud geometry and vertex-color treatment:
   `C:\Github\Github\Apps\ambute\src\three\paintedCloud.js`
+- Prenatal form surface, milky Fresnel rim, internal forms, and motion:
+  `C:\Github\Github\Apps\ambute\src\characters\shapelessBlobCharacter.js`
 
 `public/assets/brand/steam-logo-white.png` is a transparent monochrome treatment
 derived from the approved logo artwork in Valve's

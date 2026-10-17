@@ -11,6 +11,28 @@ const smoothstep = (start, end, value) => {
 
 const islandPoster = `url("${import.meta.env.BASE_URL}assets/scene/ambute-island-poster.webp")`;
 
+function WorldCopy({ className, titleId }) {
+  return (
+    <section className={className} aria-labelledby={titleId}>
+      <p className="world-copy__eyebrow">A cozy idle companion</p>
+      <h2 id={titleId}>A small life beside yours.</h2>
+      <p>
+        Ambute is a gentle creature who lives quietly on your desktop, keeping
+        you company while you work, study, or go about your day. This cozy idle
+        game unfolds in a tiny world that follows your own—time passes, seasons
+        change, and when it rains outside, it rains for Ambute too.
+      </p>
+      <p>
+        Let him potter about peacefully in the background while a living
+        natural soundscape soothes the soul, or stop by for small, gentle
+        interactions whenever you need a cozy moment together. The way you care
+        for Ambute shapes who comes next, unlocking new characters as an ancient
+        mystery slowly unfolds across generations.
+      </p>
+    </section>
+  );
+}
+
 export default function CinematicStory() {
   const storyRef = useRef(null);
   const canvasRef = useRef(null);
@@ -154,53 +176,48 @@ export default function CinematicStory() {
   }, []);
 
   return (
-    <div
-      ref={storyRef}
-      className={`story story--${status}`}
-      data-phase="prenatal"
-      style={{ "--island-poster": islandPoster }}
-    >
-      <div className="story__sticky">
-        <div
-          ref={canvasRef}
-          className="story__canvas"
-          aria-hidden="true"
-        >
-          <div className="story__fallback-blob" />
-        </div>
+    <>
+      <div
+        ref={storyRef}
+        className={`story story--${status}`}
+        data-phase="prenatal"
+        style={{ "--island-poster": islandPoster }}
+      >
+        <div className="story__sticky">
+          <div
+            ref={canvasRef}
+            className="story__canvas"
+            aria-hidden="true"
+          >
+            <div className="story__fallback-blob" />
+          </div>
 
-        <section className="hero-copy" aria-labelledby="ambute-title">
-          <h1 id="ambute-title">Ambute</h1>
-        </section>
+          <section className="hero-copy" aria-labelledby="ambute-title">
+            <h1 id="ambute-title">Ambute</h1>
+          </section>
 
-        <section className="world-copy" aria-labelledby="world-title">
-          <p className="world-copy__eyebrow">A cozy idle companion</p>
-          <h2 id="world-title">A small life beside yours.</h2>
-          <p>
-            Ambute is a gentle creature who lives quietly on your desktop,
-            keeping you company while you work, study, or go about your day.
-            This cozy idle game unfolds in a tiny world that follows your
-            own—time passes, seasons change, and when it rains outside, it
-            rains for Ambute too.
+          <WorldCopy
+            className="world-copy world-copy--overlay"
+            titleId="world-title"
+          />
+
+          <div className="scroll-cue" aria-hidden="true">
+            <span ref={scrollCueTextRef}>Scroll to meet him</span>
+            <i />
+          </div>
+
+          <p className="story__fallback-note" role="status">
+            The living scene could not be rendered, but Ambute is still here.
           </p>
-          <p>
-            Let him potter about peacefully in the background while a living
-            natural soundscape soothes the soul, or stop by for small, gentle
-            interactions whenever you need a cozy moment together. The way you
-            care for Ambute shapes who comes next, unlocking new characters as
-            an ancient mystery slowly unfolds across generations.
-          </p>
-        </section>
-
-        <div className="scroll-cue" aria-hidden="true">
-          <span ref={scrollCueTextRef}>Scroll to meet him</span>
-          <i />
         </div>
-
-        <p className="story__fallback-note" role="status">
-          The living scene could not be rendered, but Ambute is still here.
-        </p>
       </div>
-    </div>
+
+      <div className="world-copy-flow">
+        <WorldCopy
+          className="world-copy world-copy--flow"
+          titleId="world-title-mobile"
+        />
+      </div>
+    </>
   );
 }

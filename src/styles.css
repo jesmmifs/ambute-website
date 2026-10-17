@@ -133,6 +133,10 @@ a {
   transform: translateY(calc(-50% + var(--world-copy-y)));
 }
 
+.world-copy-flow {
+  display: none;
+}
+
 .world-copy__eyebrow {
   margin: 0 0 1.05rem;
   color: #647466;
@@ -450,19 +454,36 @@ a {
     line-height: 0.9;
   }
 
-  .world-copy {
+  .world-copy--overlay {
+    display: none;
+  }
+
+  .world-copy-flow {
+    position: relative;
+    z-index: 4;
+    display: block;
+    margin-top: -40svh;
+    padding: clamp(1.15rem, 5vw, 1.5rem) 1.25rem 2.25rem;
+    background: linear-gradient(180deg, #cddbd8 0%, #f3dcc5 100%);
+  }
+
+  .world-copy--flow {
+    position: relative;
     top: auto;
-    right: 1.25rem;
-    bottom: max(4.2vh, 1.7rem);
-    left: 1.25rem;
+    right: auto;
+    bottom: auto;
+    left: auto;
     width: auto;
+    margin: 0;
     padding: 1.05rem 1.1rem 1.15rem;
-    border: 1px solid rgba(45, 59, 48, 0.08);
+    border: 0;
     border-radius: 1.1rem;
     background: rgba(239, 242, 235, 0.82);
-    box-shadow: 0 1.1rem 3.5rem rgba(74, 86, 74, 0.09);
+    box-shadow: none;
     backdrop-filter: blur(10px);
-    transform: translateY(var(--world-copy-y));
+    opacity: 1;
+    transform: none;
+    will-change: auto;
   }
 
   .world-copy__eyebrow {
@@ -520,10 +541,12 @@ a {
 }
 
 @media (max-width: 375px), (max-height: 680px) and (max-width: 759px) {
-  .world-copy {
-    right: 0.85rem;
-    bottom: max(2.2vh, 0.75rem);
-    left: 0.85rem;
+  .world-copy-flow {
+    padding-right: 0.85rem;
+    padding-left: 0.85rem;
+  }
+
+  .world-copy--flow {
     padding: 0.78rem 0.88rem 0.85rem;
   }
 
