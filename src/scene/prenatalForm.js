@@ -64,8 +64,9 @@ function createRadialTexture(stops, width = 512, height = 512) {
   return texture;
 }
 
-export function createPrenatalForm() {
+export function createPrenatalForm({ lowPower = false } = {}) {
   let currentOpacity = 1;
+  let lastFieldUpdate = -Infinity;
   const group = new THREE.Group();
   const bodyRoot = new THREE.Group();
   group.add(bodyRoot);
@@ -74,8 +75,8 @@ export function createPrenatalForm() {
     color: 0xeeb297,
     emissive: 0xffc4a8,
     emissiveIntensity: 0.2,
-    transmission: 0.75,
-    thickness: 1.2,
+    transmission: lowPower ? 0 : 0.75,
+    thickness: lowPower ? 0 : 1.2,
     ior: 1.35,
     roughness: 0.35,
     metalness: 0,
@@ -98,7 +99,13 @@ export function createPrenatalForm() {
   };
   material.customProgramCacheKey = () => "ambute-prenatal-milky-rim-v1";
 
-  const metabody = new MarchingCubes(28, material, false, false, 20000);
+  const metabody = new MarchingCubes(
+    lowPower ? 24 : 28,
+    material,
+    false,
+    false,
+    lowPower ? 14000 : 20000
+  );
   metabody.isolation = 1;
   metabody.scale.setScalar(0.68);
   metabody.castShadow = true;
@@ -106,7 +113,9 @@ export function createPrenatalForm() {
   metabody.frustumCulled = false;
   bodyRoot.add(metabody);
 
-  const innerGeometry = new THREE.SphereGeometry(1, 32, 32);
+  const innerGeometry = lowPower
+    ? null
+    : new THREE.SphereGeometry(1, 32, 32);
   const createInnerMaterial = (color) =>
     new THREE.MeshStandardMaterial({
       color,
@@ -114,20 +123,14 @@ export function createPrenatalForm() {
       emissiveIntensity: 0.15,
       roughness: 0.8
     });
-  const coreMesh = new THREE.Mesh(
-    innerGeometry,
-    createInnerMaterial(0xdda671)
-  );
-  const bulge1Mesh = new THREE.Mesh(
-    innerGeometry,
-    createInnerMaterial(0xbc6e7a)
-  );
-  const bulge2Mesh = new THREE.Mesh(
-    innerGeometry,
-    createInnerMaterial(0x8e6378)
-  );
-  const innerMeshes = [coreMesh, bulge1Mesh, bulge2Mesh];
-  bodyRoot.add(...innerMeshes);
+  const innerMeshes = innerGeometry
+    ? [
+        new THREE.Mesh(innerGeometry, createInnerMaterial(0xdda671)),
+        new THREE.Mesh(innerGeometry, createInnerMaterial(0xbc6e7a)),
+        new THREE.Mesh(innerGeometry, createInnerMaterial(0x8e6378))
+      ]
+    : [];
+  if (innerMeshes.length) bodyRoot.add(...innerMeshes);
 
   const shadowTexture = createRadialTexture([
     [0, "rgba(0,0,0,.72)"],
@@ -169,52 +172,59 @@ export function createPrenatalForm() {
     const floatY = 0.86 + Math.sin(floatPhase) * (motion ? 0.1 : 0);
     bodyRoot.position.set(0, floatY, 0);
     bodyRoot.rotation.y = time * (motion ? 0.0003 : 0);
-    metabody.reset();
+    const shouldUpdateField = motion
+      ? time - lastFieldUpdate >= 1000 / 30
+      : lastFieldUpdate !== time;
+    if (shouldUpdateField) {
+      lastFieldUpdate = time;
+      metabody.reset();
 
-    const breath = Math.sin(time * 0.0009);
-    const coreShape = {
-      x: 0,
-      y: 0,
-      z: 0,
-      rx: 0.46,
-      ry: 0.46,
-      rz: 0.46,
-      strength: 1.8 * (1 + breath * 0.03)
-    };
-    const bulge1Shape = {
-      x: Math.sin(time * 0.0018) * 0.32,
-      y: Math.cos(time * 0.0014) * 0.22,
-      z: Math.sin(time * 0.001) * 0.28,
-      rx: 0.36,
-      ry: 0.36,
-      rz: 0.36,
-      strength: 1.2
-    };
-    const bulge2Shape = {
-      x: Math.cos(time * 0.0016) * 0.28,
-      y: Math.sin(time * 0.0019) * 0.22,
-      z: Math.cos(time * 0.0012) * 0.28,
-      rx: 0.32,
-      ry: 0.32,
-      rz: 0.32,
-      strength: 1
-    };
-    const shapes = [coreShape, bulge1Shape, bulge2Shape];
-    shapes.forEach((shape) => addSoftEllipsoid(metabody, shape));
+      const breath = Math.sin(time * 0.0009);
+      const coreShape = {
+        x: 0,
+        y: 0,
+        z: 0,
+        rx: 0.46,
+        ry: 0.46,
+        rz: 0.46,
+        strength: 1.8 * (1 + breath * 0.03)
+      };
+      const bulge1Shape = {
+        x: Math.sin(time * 0.0018) * 0.32,
+        y: Math.cos(time * 0.0014) * 0.22,
+        z: Math.sin(time * 0.001) * 0.28,
+        rx: 0.36,
+        ry: 0.36,
+        rz: 0.36,
+        strength: 1.2
+      };
+      const bulge2Shape = {
+        x: Math.cos(time * 0.0016) * 0.28,
+        y: Math.sin(time * 0.0019) * 0.22,
+        z: Math.cos(time * 0.0012) * 0.28,
+        rx: 0.32,
+        ry: 0.32,
+        rz: 0.32,
+        strength: 1
+      };
+      const shapes = [coreShape, bulge1Shape, bulge2Shape];
+      shapes.forEach((shape) => addSoftEllipsoid(metabody, shape));
 
-    const metabodyScale = 0.68;
-    const innerScaleMultiplier = 0.35;
-    shapes.forEach((shape, index) => {
-      innerMeshes[index].position.set(
-        shape.x * metabodyScale,
-        shape.y * metabodyScale,
-        shape.z * metabodyScale
-      );
-      innerMeshes[index].scale.setScalar(
-        shape.rx * metabodyScale * innerScaleMultiplier
-      );
-    });
-    metabody.update();
+      const metabodyScale = 0.68;
+      const innerScaleMultiplier = 0.35;
+      innerMeshes.forEach((mesh, index) => {
+        const shape = shapes[index];
+        mesh.position.set(
+          shape.x * metabodyScale,
+          shape.y * metabodyScale,
+          shape.z * metabodyScale
+        );
+        mesh.scale.setScalar(
+          shape.rx * metabodyScale * innerScaleMultiplier
+        );
+      });
+      metabody.update();
+    }
 
     const shadowScale = 0.88 - (floatY - 0.86) * 0.16;
     shadow.scale.set(shadowScale, 0.78 * shadowScale, 1);
@@ -236,7 +246,7 @@ export function createPrenatalForm() {
   function dispose() {
     metabody.geometry.dispose();
     material.dispose();
-    innerGeometry.dispose();
+    innerGeometry?.dispose();
     innerMeshes.forEach((mesh) => mesh.material.dispose());
     shadow.geometry.dispose();
     shadowMaterial.dispose();

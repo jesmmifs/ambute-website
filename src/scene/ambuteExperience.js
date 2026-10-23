@@ -15,16 +15,35 @@ function publicAssetUrl(relativePath) {
   return `${import.meta.env.BASE_URL}assets/game/${relativePath}`;
 }
 
+function detectLowPowerDevice() {
+  if (typeof window !== "undefined") {
+    const forcedProfile = new URLSearchParams(window.location.search).get(
+      "performance"
+    );
+    if (forcedProfile === "low") return true;
+    if (forcedProfile === "standard") return false;
+  }
+
+  if (typeof navigator === "undefined") return false;
+  const deviceMemory = Number(navigator.deviceMemory);
+  const hardwareConcurrency = Number(navigator.hardwareConcurrency);
+  const hasLowMemory = Number.isFinite(deviceMemory) && deviceMemory <= 4;
+  const hasFewCores =
+    Number.isFinite(hardwareConcurrency) && hardwareConcurrency <= 4;
+  return hasLowMemory || hasFewCores;
+}
+
 export function createAmbuteExperience(
   mount,
   { reducedMotion = false, onReady, onWorldReady, onError } = {}
 ) {
+  const lowPowerDevice = detectLowPowerDevice();
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({
-      antialias: true,
+      antialias: !lowPowerDevice,
       alpha: false,
-      powerPreference: "high-performance"
+      powerPreference: lowPowerDevice ? "low-power" : "high-performance"
     });
   } catch (error) {
     onError?.(error);
@@ -42,8 +61,13 @@ export function createAmbuteExperience(
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.VSMShadowMap;
+  renderer.shadowMap.type = lowPowerDevice
+    ? THREE.PCFSoftShadowMap
+    : THREE.VSMShadowMap;
   renderer.domElement.setAttribute("aria-hidden", "true");
+  renderer.domElement.dataset.performanceProfile = lowPowerDevice
+    ? "low"
+    : "standard";
   renderer.domElement.tabIndex = -1;
   mount.appendChild(renderer.domElement);
 
@@ -62,7 +86,7 @@ export function createAmbuteExperience(
   scene.fog = new THREE.Fog(0x030403, 8, 18);
 
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 40);
-  const prenatal = createPrenatalForm();
+  const prenatal = createPrenatalForm({ lowPower: lowPowerDevice });
   scene.add(prenatal.group);
 
   const sky = createWhimsicalSky();
@@ -84,7 +108,7 @@ export function createAmbuteExperience(
   keyLight.castShadow = true;
   keyLight.shadow.mapSize.set(1536, 1536);
   keyLight.shadow.radius = 5;
-  keyLight.shadow.blurSamples = 16;
+  keyLight.shadow.blurSamples = lowPowerDevice ? 4 : 16;
   keyLight.shadow.camera.left = -4.25;
   keyLight.shadow.camera.right = 4.25;
   keyLight.shadow.camera.top = 4.25;
@@ -106,9 +130,11 @@ export function createAmbuteExperience(
   let pageVisible = !document.hidden;
   let disposed = false;
   let frameId = 0;
+  let lastRenderedAt = -Infinity;
   let progress = 0;
   let worldLoadPromise = null;
   let layout = {};
+  const frameInterval = lowPowerDevice ? 1000 / 30 : 0;
 
   function loadWorld() {
     if (!worldLoadPromise) worldLoadPromise = island.load();
@@ -169,21 +195,38 @@ export function createAmbuteExperience(
     renderer.toneMappingExposure = mix(1.08, 1.42, transition);
   }
 
-  function render(now = performance.now()) {
-    frameId = 0;
-    if (disposed) return;
+  function drawFrame(now = performance.now()) {
     applyProgress();
-    prenatal.update(now, !reducedMotion);
-    sky.update(now * 0.001, !reducedMotion);
+    if (prenatal.group.visible) prenatal.update(now, !reducedMotion);
+    if (sky.group.visible) sky.update(now * 0.001, !reducedMotion);
     if (island.group.visible) {
       island.update(now, camera, { sun: keyLight, ambient, skyFill });
     }
     renderer.render(scene, camera);
-    if (active && pageVisible) frameId = window.requestAnimationFrame(render);
+  }
+
+  function renderImmediately(now = performance.now()) {
+    if (disposed) return;
+    lastRenderedAt = now;
+    drawFrame(now);
+  }
+
+  function render(now = performance.now()) {
+    frameId = 0;
+    if (disposed) return;
+    if (now - lastRenderedAt >= frameInterval - 0.5) {
+      lastRenderedAt = now;
+      drawFrame(now);
+    }
+    if (active && pageVisible && !reducedMotion) {
+      frameId = window.requestAnimationFrame(render);
+    }
   }
 
   function start() {
-    if (!frameId && active && pageVisible && !disposed) {
+    if (reducedMotion) {
+      renderImmediately();
+    } else if (!frameId && active && pageVisible && !disposed) {
       frameId = window.requestAnimationFrame(render);
     }
   }
@@ -205,12 +248,18 @@ export function createAmbuteExperience(
       width >= 760 && width <= 1000 && height > width && !shortLandscape;
     const tallDesktop = width > 900 && aspect < 1.18;
     const compact = mobilePortrait || tabletPortrait;
-    const pixelRatio = compact
-      ? Math.min(window.devicePixelRatio, 1.15)
-      : Math.min(window.devicePixelRatio, 1.55);
+    const pixelRatioCap = lowPowerDevice ? 1 : compact ? 1.15 : 1.55;
+    const pixelRatio = Math.min(window.devicePixelRatio, pixelRatioCap);
     renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height, false);
-    keyLight.shadow.mapSize.set(compact ? 768 : 1536, compact ? 768 : 1536);
+    const shadowMapSize = lowPowerDevice
+      ? compact
+        ? 512
+        : 768
+      : compact
+        ? 768
+        : 1536;
+    keyLight.shadow.mapSize.set(shadowMapSize, shadowMapSize);
     camera.aspect = width / height;
     camera.fov = phone
       ? 40
@@ -315,14 +364,14 @@ export function createAmbuteExperience(
     }
     island.setCompact(compact || shortLandscape);
     applyProgress();
-    if (!active || !pageVisible) render();
+    if (reducedMotion || !active || !pageVisible) renderImmediately();
   }
 
   function setProgress(value) {
     progress = clamp(value);
     if (progress > 0.03) loadWorld();
     applyProgress();
-    if (!active || !pageVisible) render();
+    if (reducedMotion || !active || !pageVisible) renderImmediately();
   }
 
   function setActive(value) {
@@ -334,6 +383,12 @@ export function createAmbuteExperience(
   function setReducedMotion(value) {
     reducedMotion = value;
     island.setReducedMotion(value);
+    if (reducedMotion) {
+      stop();
+      renderImmediately();
+    } else {
+      start();
+    }
   }
 
   function handleVisibility() {
@@ -344,7 +399,8 @@ export function createAmbuteExperience(
 
   document.addEventListener("visibilitychange", handleVisibility);
   resize();
-  render();
+  renderImmediately();
+  start();
   onReady?.();
 
   function dispose() {

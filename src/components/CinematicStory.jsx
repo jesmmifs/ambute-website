@@ -38,7 +38,6 @@ export default function CinematicStory() {
   const canvasRef = useRef(null);
   const scrollCueTextRef = useRef(null);
   const experienceRef = useRef(null);
-  const idleHandleRef = useRef(null);
   const [status, setStatus] = useState("loading");
 
   useEffect(() => {
@@ -69,19 +68,6 @@ export default function CinematicStory() {
       }
     });
     experienceRef.current = experience;
-
-    const loadWorld = () => {
-      idleHandleRef.current = null;
-      experience.loadWorld();
-    };
-
-    if ("requestIdleCallback" in window) {
-      idleHandleRef.current = window.requestIdleCallback(loadWorld, {
-        timeout: 1600
-      });
-    } else {
-      idleHandleRef.current = window.setTimeout(loadWorld, 650);
-    }
 
     const updateStory = () => {
       scrollFrame = 0;
@@ -158,13 +144,6 @@ export default function CinematicStory() {
     return () => {
       disposed = true;
       if (scrollFrame) window.cancelAnimationFrame(scrollFrame);
-      if (idleHandleRef.current !== null) {
-        if ("cancelIdleCallback" in window) {
-          window.cancelIdleCallback(idleHandleRef.current);
-        } else {
-          window.clearTimeout(idleHandleRef.current);
-        }
-      }
       resizeObserver.disconnect();
       visibilityObserver.disconnect();
       reducedMotionQuery.removeEventListener("change", handleMotionPreference);
