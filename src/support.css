@@ -218,15 +218,6 @@ body {
   line-height: 1.55;
 }
 
-.support-form__honey {
-  position: absolute !important;
-  left: -10000px !important;
-  width: 1px !important;
-  height: 1px !important;
-  overflow: hidden !important;
-  opacity: 0 !important;
-}
-
 .support-success {
   margin-top: 2rem;
 }

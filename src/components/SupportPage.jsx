@@ -46,14 +46,6 @@ export default function SupportPage() {
               <input type="hidden" name="_template" value="table" />
               <input type="hidden" name="_next" value="https://ambute.com/support.html?sent=1" />
               <input type="hidden" name="_url" value="https://ambute.com/support.html" />
-              <input
-                className="support-form__honey"
-                type="text"
-                name="_honey"
-                tabIndex="-1"
-                autoComplete="off"
-                aria-hidden="true"
-              />
 
               <div className="support-form__row">
                 <label>
