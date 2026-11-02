@@ -39,6 +39,9 @@ export default function SteamSignoff() {
             </a>
           </div>
         </nav>
+        <nav className="steam-signoff__links" aria-label="Website">
+          <a href="./support.html">Support</a>
+        </nav>
         <p className="steam-signoff__legal">
           ©2026 Valve Corporation. Steam and the Steam logo are trademarks
           and/or registered trademarks of Valve Corporation in the U.S. and/or

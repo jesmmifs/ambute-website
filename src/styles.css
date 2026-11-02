@@ -359,9 +359,33 @@ a {
   stroke: none;
 }
 
+.steam-signoff__links {
+  margin-top: 1.75rem;
+}
+
+.steam-signoff__links a {
+  color: rgba(226, 233, 225, 0.68);
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-decoration-color: rgba(226, 233, 225, 0.28);
+  text-underline-offset: 0.25rem;
+  transition: color 180ms ease, text-decoration-color 180ms ease;
+}
+
+.steam-signoff__links a:hover {
+  color: #f1f4ef;
+  text-decoration-color: rgba(241, 244, 239, 0.8);
+}
+
+.steam-signoff__links a:focus-visible {
+  border-radius: 0.15rem;
+  outline: 2px solid #cbd8cc;
+  outline-offset: 4px;
+}
+
 .steam-signoff__legal {
   max-width: 42rem;
-  margin: 2.2rem 0 0;
+  margin: 1.6rem 0 0;
   color: rgba(222, 225, 217, 0.42);
   font-size: 0.65rem;
   line-height: 1.55;
